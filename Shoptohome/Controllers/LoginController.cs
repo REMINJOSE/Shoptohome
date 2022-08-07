@@ -9,8 +9,8 @@ namespace Shoptohome.Controllers
    [ApiController]
    public class LoginController : ControllerBase
    {
-      public IConfiguration _configuration { get; }
-      private DataContext _dataContext { get; }
+      public IConfiguration _configuration;
+      private readonly DataContext _dataContext;
       private readonly IHashPassword _hashPassword;
       private readonly IJWTService _jWTService;
 
@@ -42,7 +42,6 @@ namespace Shoptohome.Controllers
             return BadRequest("Wrong password.");
          }
          var token = _jWTService.CreateToken(user, _configuration.GetSection("AppSettings:Token").Value);
-
          return Ok(token);
       }
 
@@ -58,38 +57,46 @@ namespace Shoptohome.Controllers
                      .ConfigureAwait(false);
          return Ok(user);
       }
+
       [HttpPost]
       [Route("api/login/updateuser")]
       public async Task<IActionResult> UpdateUserAsync(User user)
       {
-         var dbuser = await _dataContext.Users.FindAsync(user.UserID).ConfigureAwait(false);
-         if (dbuser == null)
+         var users = _dataContext.Users.AsQueryable();
+         var dbusers = await users
+                        .Where(d => d.UserName == user.UserName).ToListAsync()
+                        .ConfigureAwait(false);
+         if (dbusers == null)
          {
             return BadRequest("User not found");
          }
-         dbuser.UserName = user.UserName;
-         dbuser.Password = user.Password;
-         dbuser.RoleID = user.RoleID;
-         dbuser.StatusID = user.StatusID;
-
+         dbusers.First().UserName = user.UserName;
+         dbusers.First().Password = user.Password;
+         dbusers.First().RoleID = user.RoleID;
+         dbusers.First().StatusID = user.StatusID;
+         dbusers.First().ModifiedBy = user.UserID;
+         dbusers.First().ModifiedDate = DateTime.Now;
          await _dataContext.SaveChangesAsync()
                      .ConfigureAwait(false);
-
          return Ok(user);
       }
-      [HttpPost]
+
+      [HttpDelete]
       [Route("api/login/deleteuser")]
-      public async Task<IActionResult> DeleteUserAsync(int userId)
+      public async Task<IActionResult> DeleteUserAsync(User user)
       {
-         var dbuser = await _dataContext.Users.FindAsync(userId).ConfigureAwait(false);
-         if (dbuser == null)
+         var users = _dataContext.Users.AsQueryable();
+         var dbusers = await users
+                              .Where(d => d.UserName == user.UserName).ToListAsync()
+                              .ConfigureAwait(false);
+         if (dbusers == null)
          {
             return BadRequest("User not found");
          }
-         _dataContext.Users.Remove(dbuser);
+         _dataContext.Users.Remove(dbusers.First());
          await _dataContext.SaveChangesAsync()
                      .ConfigureAwait(false);
-         return Ok(userId);
+         return Ok(true);
       }
    }
 }
