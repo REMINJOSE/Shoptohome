@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Shoptohome.Data;
 using Shoptohome.Domain;
@@ -41,7 +42,7 @@ namespace Shoptohome.Controllers
          {
             return BadRequest("Wrong password.");
          }
-         var token = _jWTService.CreateToken(user, _configuration.GetSection("AppSettings:Token").Value);
+         var token = _jWTService.CreateToken(dbUser.First(), _configuration.GetSection("AppSettings:Token").Value);
          return Ok(token);
       }
 
@@ -58,7 +59,7 @@ namespace Shoptohome.Controllers
          return Ok(user);
       }
 
-      [HttpPost]
+      [HttpPost,Authorize]
       [Route("api/login/updateuser")]
       public async Task<IActionResult> UpdateUserAsync(User user)
       {
@@ -81,7 +82,7 @@ namespace Shoptohome.Controllers
          return Ok(user);
       }
 
-      [HttpDelete]
+      [HttpDelete, Authorize(Roles ="1")]
       [Route("api/login/deleteuser")]
       public async Task<IActionResult> DeleteUserAsync(User user)
       {

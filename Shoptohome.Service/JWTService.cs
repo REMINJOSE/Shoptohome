@@ -11,7 +11,8 @@ namespace Shoptohome.Service
       public string CreateToken(User user, string _key)
       {
          List<Claim> claims = new() {
-            new Claim(ClaimTypes.Name,user.UserName )
+            new Claim(ClaimTypes.Name,user.UserName ),
+            new Claim(ClaimTypes.Role,user.RoleID.ToString() ),
          };
          var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_key));
          var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
